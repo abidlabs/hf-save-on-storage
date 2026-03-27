@@ -4,14 +4,20 @@ A [Hugging Face CLI extension](https://huggingface.co/docs/huggingface_hub/en/gu
 
 ## Quickstart
 
+Try it right now against a public S3 bucket — no AWS credentials needed:
+
 ```bash
-# Install the hf CLI (if you don't have it)
 pip install huggingface_hub[cli]
-
-# Install the extension
 hf extensions install abidlabs/hf-save-on-storage
+hf save-on-storage gradio-pypi-previews --egress 100 --analyze-only
+```
 
-# Analyze an S3 bucket (requires AWS credentials configured)
+This scans the public `gradio-pypi-previews` bucket (~547 GB, 9k+ objects) and shows you'd save ~55% by moving to HF Buckets.
+
+## Usage
+
+```bash
+# Analyze your own S3 bucket (requires AWS credentials configured)
 hf save-on-storage my-s3-bucket --analyze-only
 
 # Include egress estimate (100 GB/month) for a fuller comparison
