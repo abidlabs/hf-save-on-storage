@@ -9,7 +9,7 @@ An unofficial [Hugging Face CLI extension](https://huggingface.co/docs/huggingfa
 Try it right now against a public S3 bucket by running the following commands in your terminal (no login needed):
 
 ```bash
-pip install huggingface_hub
+pip install --upgrade huggingface_hub
 hf extensions install abidlabs/hf-save-on-storage
 hf save-on-storage gradio-pypi-previews --egress 100 --analyze-only
 ```
