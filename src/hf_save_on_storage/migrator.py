@@ -20,6 +20,7 @@ def migrate_bucket(
     private: bool = True,
     s3_region: str | None = None,
     progress_callback=None,
+    download_callback=None,
     batch_size: int = 50,
     download_workers: int = 8,
 ) -> dict:
@@ -165,6 +166,8 @@ def migrate_bucket(
                     try:
                         future.result()
                         batch.append((local_path, path_in_bucket, key, size))
+                        if download_callback:
+                            download_callback(key, size)
                     except Exception as e:
                         with lock:
                             failed += 1

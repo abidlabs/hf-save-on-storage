@@ -215,7 +215,7 @@ def run_analysis(args):
             total_bytes = info["total_bytes"]
 
             with Progress(
-                TextColumn("[bold green]{task.description}"),
+                TextColumn("{task.description}"),
                 BarColumn(),
                 TaskProgressColumn(),
                 DownloadColumn(),
@@ -223,11 +223,19 @@ def run_analysis(args):
                 TimeRemainingColumn(),
                 console=console,
             ) as progress:
-                task = progress.add_task("Migrating...", total=total_bytes)
+                dl_task = progress.add_task(
+                    "[cyan]Downloading from S3", total=total_bytes
+                )
+                ul_task = progress.add_task(
+                    "[green]Uploading to HF    ", total=total_bytes
+                )
 
-                def on_progress(key, size, success, error=None):
+                def on_download(key, size):
+                    progress.advance(dl_task, size)
+
+                def on_upload(key, size, success, error=None):
                     if success:
-                        progress.advance(task, size)
+                        progress.advance(ul_task, size)
                     else:
                         progress.console.print(f"  [red]\u2717[/] {key}: {error}")
 
@@ -237,7 +245,8 @@ def run_analysis(args):
                     prefix=prefix,
                     private=private,
                     s3_region=info["region"],
-                    progress_callback=on_progress,
+                    progress_callback=on_upload,
+                    download_callback=on_download,
                 )
 
             console.print()
