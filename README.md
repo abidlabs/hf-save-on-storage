@@ -1,4 +1,4 @@
-<img width="1234" height="556" alt="image" src="https://github.com/user-attachments/assets/66f78f47-1e78-4d7e-85f8-0e8a914651cb" />
+<img width="600" alt="image" src="https://github.com/user-attachments/assets/66f78f47-1e78-4d7e-85f8-0e8a914651cb" />
 
 # hf-save-on-storage
 
