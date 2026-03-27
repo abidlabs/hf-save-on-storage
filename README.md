@@ -14,7 +14,7 @@ hf extensions install abidlabs/hf-save-on-storage
 hf save-on-storage gradio-pypi-previews
 ```
 
-This scans the public `gradio-pypi-previews` bucket (~547 GB, 9k+ objects) and shows you'd save at least ~24% by moving to HF Buckets (even higher including egress costs).
+This scans the public `gradio-pypi-previews` bucket (~547 GB, 9k+ objects) and shows you'd save at least ~24% by moving to HF Buckets (actually even higher if we were to include egress and API costs).
 
 <img width="946" height="587" alt="image" src="https://github.com/user-attachments/assets/dc94ba87-ae24-42cc-8d2b-81af11f7a054" />
 
@@ -45,27 +45,6 @@ hf save-on-storage my-s3-bucket --hf-repo myuser/my-dataset
 3. **Compares costs** — shows a line-by-line breakdown of S3 vs HF Buckets pricing
 4. **Offers to migrate** — streams files from S3 to an HF repo if you agree
 
-### Sample output
-
-```
-┌──────────────────────────────────────────────────────────────┐
-│                   Monthly Cost Comparison                     │
-╞══════════════════╤═══════════╤═══════════════╤═══════════════╡
-│ Cost Component   │    AWS S3 │ HF Buckets    │      You Save │
-├──────────────────┼───────────┼───────────────┼───────────────┤
-│ Storage          │   $235.52 │       $18.00  │       $217.52 │
-│ Egress / CDN     │    $89.10 │        $0.00  │        $89.10 │
-│ API Requests     │     $0.40 │        $0.00  │         $0.40 │
-├──────────────────┼───────────┼───────────────┼───────────────┤
-│ Total            │   $325.02 │       $18.00  │       $307.02 │
-└──────────────────┴───────────┴───────────────┴───────────────┘
-
-╭─────────── Savings Summary ───────────╮
-│ You'd save $307.02/month (94%) by     │
-│ migrating to HF Storage Buckets!      │
-│ That's $3,684.24/year.                │
-╰───────────────────────────────────────╯
-```
 
 ## Why HF Buckets are cheaper
 
