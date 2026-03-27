@@ -7,7 +7,7 @@ A [Hugging Face CLI extension](https://huggingface.co/docs/huggingface_hub/en/gu
 Try it right now against a public S3 bucket — no AWS credentials needed:
 
 ```bash
-pip install huggingface_hub[cli]
+pip install huggingface_hub
 hf extensions install abidlabs/hf-save-on-storage
 hf save-on-storage gradio-pypi-previews --egress 100 --analyze-only
 ```
