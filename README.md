@@ -1,12 +1,12 @@
-<img width="600" alt="image" src="https://github.com/user-attachments/assets/66f78f47-1e78-4d7e-85f8-0e8a914651cb" />
+<img width="1234" height="556" alt="image" src="./assets/hero.png" />
 
 # hf-save-on-storage
 
-An unofficial [Hugging Face CLI extension](https://huggingface.co/docs/huggingface_hub/en/guides/cli-extensions) that analyzes your AWS S3 bucket and shows how much you'd save by migrating to [HF Storage Buckets](https://huggingface.co/storage). If you like what you see, you can have it migrate the data for you too :)
+An unofficial [Hugging Face CLI extension](https://huggingface.co/docs/huggingface_hub/en/guides/cli-extensions) that analyzes your AWS S3 bucket and shows how much you'd save by migrating the data in the bucket to [HF Storage Buckets](https://huggingface.co/storage). If you like what you see, you can have it migrate the data for you too :)
 
 ## Quickstart
 
-Try it right now against a public S3 bucket by running the following commands in your terminal (no login needed):
+Try it right now against one of our public S3 buckets by running the following commands in your terminal (no login needed):
 
 ```bash
 pip install --upgrade huggingface_hub
