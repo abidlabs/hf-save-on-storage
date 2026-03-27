@@ -1,0 +1,17 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "hf-save-on-storage"
+version = "0.1.0"
+description = "Analyze your S3 bucket costs and see how much you'd save by migrating to HF Storage Buckets"
+requires-python = ">=3.10"
+dependencies = [
+    "boto3>=1.28.0",
+    "huggingface_hub>=0.30.0",
+    "rich>=13.0.0",
+]
+
+[project.scripts]
+hf-save-on-storage = "hf_save_on_storage.cli:main"

@@ -1,0 +1,94 @@
+# hf-save-on-storage
+
+A [Hugging Face CLI extension](https://huggingface.co/docs/huggingface_hub/en/guides/cli-extensions) that analyzes your AWS S3 bucket and shows how much you'd save by migrating to [HF Storage Buckets](https://huggingface.co/storage). If you like what you see, it migrates the data for you.
+
+## Quickstart
+
+```bash
+# Install the hf CLI (if you don't have it)
+pip install huggingface_hub[cli]
+
+# Install the extension
+hf extensions install abidlabs/hf-save-on-storage
+
+# Analyze an S3 bucket (requires AWS credentials configured)
+hf save-on-storage my-s3-bucket --analyze-only
+
+# Include egress estimate (100 GB/month) for a fuller comparison
+hf save-on-storage my-s3-bucket --egress 100 --analyze-only
+
+# Compare against public repo pricing (cheaper)
+hf save-on-storage my-s3-bucket --public --analyze-only
+
+# Only analyze a specific prefix
+hf save-on-storage my-s3-bucket --prefix models/v2/ --analyze-only
+
+# Full run: analyze + migrate to an HF dataset repo
+hf save-on-storage my-s3-bucket --hf-repo myuser/my-dataset
+```
+
+## What it does
+
+1. **Scans your S3 bucket** — counts objects, total size, storage classes
+2. **Fetches CloudWatch metrics** — GET/PUT requests and egress over the last 30 days (if available)
+3. **Compares costs** — shows a line-by-line breakdown of S3 vs HF Buckets pricing
+4. **Offers to migrate** — streams files from S3 to an HF repo if you agree
+
+### Sample output
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│                   Monthly Cost Comparison                     │
+╞══════════════════╤═══════════╤═══════════════╤═══════════════╡
+│ Cost Component   │    AWS S3 │ HF Buckets    │      You Save │
+├──────────────────┼───────────┼───────────────┼───────────────┤
+│ Storage          │   $235.52 │       $18.00  │       $217.52 │
+│ Egress / CDN     │    $89.10 │        $0.00  │        $89.10 │
+│ API Requests     │     $0.40 │        $0.00  │         $0.40 │
+├──────────────────┼───────────┼───────────────┼───────────────┤
+│ Total            │   $325.02 │       $18.00  │       $307.02 │
+└──────────────────┴───────────┴───────────────┴───────────────┘
+
+╭─────────── Savings Summary ───────────╮
+│ You'd save $307.02/month (94%) by     │
+│ migrating to HF Storage Buckets!      │
+│ That's $3,684.24/year.                │
+╰───────────────────────────────────────╯
+```
+
+## Why HF Buckets are cheaper
+
+| | AWS S3 | HF Buckets |
+|---|---|---|
+| Storage | $23/TB | $8–18/TB |
+| Egress | $0.05–0.09/GB | **Free** (included) |
+| API requests | $0.0004–0.005/1K | **Free** (included) |
+| CDN | Extra cost | **Free** (included) |
+| Deduplication | N/A | Built-in (up to 4x savings) |
+
+## Options
+
+| Flag | Description |
+|---|---|
+| `bucket` | S3 bucket name (required) |
+| `--prefix` | Only analyze objects under this S3 prefix |
+| `--public` | Use HF public repo pricing (default: private) |
+| `--egress GB` | Manual monthly egress estimate in GB |
+| `--hf-repo` | HF repo ID for migration (e.g. `user/dataset-name`) |
+| `--repo-type` | `dataset`, `model`, or `space` (default: `dataset`) |
+| `--analyze-only` | Show cost comparison without offering migration |
+
+## Requirements
+
+- Python >= 3.10
+- AWS credentials configured (`aws configure` or env vars)
+- `hf` CLI logged in (`huggingface-cli login`) for migration
+
+## Dev install
+
+```bash
+git clone https://github.com/abidlabs/hf-save-on-storage
+cd hf-save-on-storage
+pip install -e .
+pytest tests/ -v
+```
