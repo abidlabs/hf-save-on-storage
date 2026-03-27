@@ -11,10 +11,13 @@ Try it right now against one of our public S3 buckets by running the following c
 ```bash
 pip install --upgrade huggingface_hub
 hf extensions install abidlabs/hf-save-on-storage
-hf save-on-storage gradio-pypi-previews --egress 100 --analyze-only
+hf save-on-storage gradio-pypi-previews
 ```
 
-This scans the public `gradio-pypi-previews` bucket (~547 GB, 9k+ objects) and shows you'd save ~55% by moving to HF Buckets.
+This scans the public `gradio-pypi-previews` bucket (~547 GB, 9k+ objects) and shows you'd save ~24% by moving to HF Buckets.
+
+<img width="946" height="587" alt="image" src="https://github.com/user-attachments/assets/dc94ba87-ae24-42cc-8d2b-81af11f7a054" />
+
 
 ## Usage
 
