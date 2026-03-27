@@ -43,7 +43,7 @@ hf save-on-storage my-s3-bucket --hf-repo myuser/my-dataset
 1. **Scans your S3 bucket** — counts objects, total size, storage classes
 2. **Fetches CloudWatch metrics** — GET/PUT requests and egress over the last 30 days (if available)
 3. **Compares costs** — shows a line-by-line breakdown of S3 vs HF Buckets pricing
-4. **Offers to migrate** — streams files from S3 to an HF repo if you agree
+4. **Offers to migrate** — streams files from S3 to an HF Bucket if you agree
 
 
 ## Why HF Buckets are cheaper
