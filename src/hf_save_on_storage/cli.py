@@ -145,11 +145,18 @@ def run_analysis(args):
     console.print(ctable)
     console.print()
 
+    no_egress_data = metrics.get("egress_gb") is None and not args.egress
+
     if savings > 0:
+        egress_note = (
+            "\n[bold yellow]⚠ Egress costs not included — actual savings are likely even higher![/]"
+            if no_egress_data else ""
+        )
         console.print(Panel(
             f"[bold green]You'd save {format_money(savings)}/month ({savings_pct:.0f}%) "
             f"by migrating to HF Storage Buckets![/]\n"
-            f"[dim]That's {format_money(savings * 12)}/year.[/]\n\n"
+            f"[dim]That's {format_money(savings * 12)}/year.[/]"
+            f"{egress_note}\n\n"
             "[dim]HF Buckets include: free egress & CDN, no per-request fees, "
             "Xet deduplication (up to 4x upload savings), and no file-count limits.[/]",
             title="Savings Summary",
@@ -169,13 +176,12 @@ def run_analysis(args):
     # Offer migration
     if not args.analyze_only and savings > 0:
         if Confirm.ask("[bold]Would you like to migrate this data to HF Storage Buckets?[/]"):
-            hf_repo = args.hf_repo or Prompt.ask(
-                "HF repo ID (e.g. username/my-dataset)",
+            hf_bucket_id = args.hf_bucket or Prompt.ask(
+                "HF bucket ID (e.g. username/my-bucket)",
             )
-            repo_type = args.repo_type or "dataset"
 
             console.print()
-            console.print(f"[bold blue]Migrating to:[/] [cyan]{hf_repo}[/] (type={repo_type}, private={private})")
+            console.print(f"[bold blue]Migrating to:[/] [cyan]hf://buckets/{hf_bucket_id}[/] (private={private})")
             console.print()
 
             def on_progress(key, size, success, error=None):
@@ -187,9 +193,8 @@ def run_analysis(args):
             with console.status("[bold green]Migrating..."):
                 result = migrate_bucket(
                     s3_bucket=bucket,
-                    hf_repo_id=hf_repo,
+                    hf_bucket_id=hf_bucket_id,
                     prefix=prefix,
-                    repo_type=repo_type,
                     private=private,
                     s3_region=info["region"],
                     progress_callback=on_progress,
@@ -233,15 +238,9 @@ def main():
         help="Estimated monthly egress in GB (used if CloudWatch metrics unavailable)",
     )
     parser.add_argument(
-        "--hf-repo",
+        "--hf-bucket",
         default=None,
-        help="HF repo ID for migration (e.g. username/my-dataset)",
-    )
-    parser.add_argument(
-        "--repo-type",
-        choices=["dataset", "model", "space"],
-        default="dataset",
-        help="HF repo type (default: dataset)",
+        help="HF bucket ID for migration (e.g. username/my-bucket)",
     )
     parser.add_argument(
         "--analyze-only",

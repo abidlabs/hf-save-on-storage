@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import os
 import tempfile
 from pathlib import Path
 
@@ -12,23 +11,18 @@ from huggingface_hub import HfApi
 
 def migrate_bucket(
     s3_bucket: str,
-    hf_repo_id: str,
+    hf_bucket_id: str,
     prefix: str = "",
-    repo_type: str = "dataset",
     private: bool = True,
     s3_region: str | None = None,
     progress_callback=None,
+    batch_size: int = 50,
 ) -> dict:
-    """Stream objects from S3 to an HF repo, file by file via temp dir."""
+    """Stream objects from S3 to an HF Storage Bucket, in batches."""
     api = HfApi()
 
-    # Create the HF repo if it doesn't exist
-    api.create_repo(
-        repo_id=hf_repo_id,
-        repo_type=repo_type,
-        private=private,
-        exist_ok=True,
-    )
+    # Create the HF bucket if it doesn't exist
+    api.create_bucket(hf_bucket_id, private=private, exist_ok=True)
 
     s3 = boto3.client("s3", region_name=s3_region) if s3_region else boto3.client("s3")
     paginator = s3.get_paginator("list_objects_v2")
@@ -42,6 +36,53 @@ def migrate_bucket(
     total_bytes = 0
 
     with tempfile.TemporaryDirectory() as tmpdir:
+        # Collect files in batches for efficient upload
+        batch: list[tuple[str, str, str, int]] = []  # (local_path, path_in_bucket, key, size)
+
+        def flush_batch():
+            nonlocal migrated, failed, total_bytes
+            if not batch:
+                return
+
+            add_list = []
+            for local_path, path_in_bucket, key, size in batch:
+                add_list.append((local_path, path_in_bucket))
+
+            try:
+                api.batch_bucket_files(
+                    hf_bucket_id,
+                    add=add_list,
+                )
+                # All succeeded
+                for local_path, path_in_bucket, key, size in batch:
+                    migrated += 1
+                    total_bytes += size
+                    if progress_callback:
+                        progress_callback(key, size, True)
+            except Exception as e:
+                # Batch failed — try individually to identify which files failed
+                for local_path, path_in_bucket, key, size in batch:
+                    try:
+                        api.batch_bucket_files(
+                            hf_bucket_id,
+                            add=[(local_path, path_in_bucket)],
+                        )
+                        migrated += 1
+                        total_bytes += size
+                        if progress_callback:
+                            progress_callback(key, size, True)
+                    except Exception as inner_e:
+                        failed += 1
+                        if progress_callback:
+                            progress_callback(key, size, False, str(inner_e))
+            finally:
+                # Clean up temp files
+                for local_path, _, _, _ in batch:
+                    p = Path(local_path)
+                    if p.exists():
+                        p.unlink()
+                batch.clear()
+
         for page in paginator.paginate(**kwargs):
             for obj in page.get("Contents", []):
                 key = obj["Key"]
@@ -50,36 +91,31 @@ def migrate_bucket(
                 if key.endswith("/"):
                     continue  # skip directory markers
 
-                # Determine path in HF repo
+                # Determine path in HF bucket
                 if prefix:
-                    path_in_repo = key[len(prefix):].lstrip("/")
+                    path_in_bucket = key[len(prefix):].lstrip("/")
                 else:
-                    path_in_repo = key
+                    path_in_bucket = key
 
-                if not path_in_repo:
+                if not path_in_bucket:
                     continue
 
-                local_path = Path(tmpdir) / path_in_repo.replace("/", "_")
+                local_path = str(Path(tmpdir) / path_in_bucket.replace("/", "_"))
 
                 try:
-                    s3.download_file(s3_bucket, key, str(local_path))
-                    api.upload_file(
-                        path_or_fileobj=str(local_path),
-                        path_in_repo=path_in_repo,
-                        repo_id=hf_repo_id,
-                        repo_type=repo_type,
-                    )
-                    migrated += 1
-                    total_bytes += size
-                    if progress_callback:
-                        progress_callback(key, size, True)
+                    s3.download_file(s3_bucket, key, local_path)
+                    batch.append((local_path, path_in_bucket, key, size))
                 except Exception as e:
                     failed += 1
                     if progress_callback:
                         progress_callback(key, size, False, str(e))
-                finally:
-                    if local_path.exists():
-                        local_path.unlink()
+                    continue
+
+                if len(batch) >= batch_size:
+                    flush_batch()
+
+        # Flush remaining files
+        flush_batch()
 
     return {
         "migrated": migrated,
