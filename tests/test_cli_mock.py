@@ -11,7 +11,11 @@ def _mock_paginate(**kwargs):
     """Return fake S3 objects totaling ~5 GB."""
     page = {
         "Contents": [
-            {"Key": f"data/file_{i}.parquet", "Size": 500 * 1024 * 1024, "StorageClass": "STANDARD"}
+            {
+                "Key": f"data/file_{i}.parquet",
+                "Size": 500 * 1024 * 1024,
+                "StorageClass": "STANDARD",
+            }
             for i in range(10)
         ]
     }
@@ -39,7 +43,8 @@ def test_cli_analyze_only():
     """Test the CLI runs with --analyze-only using mocked S3."""
     result = subprocess.run(
         [sys.executable, "-m", "hf_save_on_storage.cli", "--help"],
-        capture_output=True, text=True,
+        capture_output=True,
+        text=True,
     )
     assert result.returncode == 0
     assert "save-on-storage" in result.stdout

@@ -9,6 +9,15 @@ from rich.console import Console
 from rich.table import Table
 from rich.panel import Panel
 from rich.prompt import Confirm, Prompt
+from rich.progress import (
+    Progress,
+    BarColumn,
+    TextColumn,
+    TaskProgressColumn,
+    TransferSpeedColumn,
+    DownloadColumn,
+    TimeRemainingColumn,
+)
 from rich import box
 
 from .s3_analyzer import analyze_bucket, get_cloudwatch_metrics
@@ -82,13 +91,19 @@ def run_analysis(args):
         console.print(mtable)
         console.print()
     else:
-        console.print("[dim]CloudWatch metrics unavailable (S3 request metrics may not be enabled).[/]")
-        console.print("[dim]Using storage-only comparison. Enable S3 request metrics for a fuller picture.[/]")
+        console.print(
+            "[dim]CloudWatch metrics unavailable (S3 request metrics may not be enabled).[/]"
+        )
+        console.print(
+            "[dim]Using storage-only comparison. Enable S3 request metrics for a fuller picture.[/]"
+        )
         console.print()
 
     # Allow manual overrides for egress if not available
     if metrics["egress_gb"] is None and not args.egress:
-        console.print("[dim]Tip: pass --egress <GB> to include estimated monthly egress in the comparison.[/]")
+        console.print(
+            "[dim]Tip: pass --egress <GB> to include estimated monthly egress in the comparison.[/]"
+        )
     if args.egress:
         egress_gb = args.egress
 
@@ -115,9 +130,13 @@ def run_analysis(args):
     ctable.add_column("AWS S3", style="red", justify="right", footer_style="bold red")
     ctable.add_column(
         f"HF Buckets ({'Private' if private else 'Public'})",
-        style="green", justify="right", footer_style="bold green",
+        style="green",
+        justify="right",
+        footer_style="bold green",
     )
-    ctable.add_column("You Save", style="yellow", justify="right", footer_style="bold yellow")
+    ctable.add_column(
+        "You Save", style="yellow", justify="right", footer_style="bold yellow"
+    )
 
     ctable.add_row(
         "Storage",
@@ -150,47 +169,68 @@ def run_analysis(args):
     if savings > 0:
         egress_note = (
             "\n[bold yellow]⚠ Egress costs not included — actual savings are likely even higher![/]"
-            if no_egress_data else ""
+            if no_egress_data
+            else ""
         )
-        console.print(Panel(
-            f"[bold green]You'd save {format_money(savings)}/month ({savings_pct:.0f}%) "
-            f"by migrating to HF Storage Buckets![/]\n"
-            f"[dim]That's {format_money(savings * 12)}/year.[/]"
-            f"{egress_note}\n\n"
-            "[dim]HF Buckets include: free egress & CDN, no per-request fees, "
-            "Xet deduplication (up to 4x upload savings), and no file-count limits.[/]",
-            title="Savings Summary",
-            border_style="green",
-        ))
+        console.print(
+            Panel(
+                f"[bold green]You'd save {format_money(savings)}/month ({savings_pct:.0f}%) "
+                f"by migrating to HF Storage Buckets![/]\n"
+                f"[dim]That's {format_money(savings * 12)}/year.[/]"
+                f"{egress_note}\n\n"
+                "[dim]HF Buckets include: free egress & CDN, no per-request fees, "
+                "Xet deduplication (up to 4x upload savings), and no file-count limits.[/]",
+                title="Savings Summary",
+                border_style="green",
+            )
+        )
     else:
-        console.print(Panel(
-            f"[yellow]HF Buckets would cost {format_money(-savings)}/month more for this bucket.[/]\n"
-            "[dim]HF Buckets still include free egress, CDN, and deduplication — "
-            "savings grow with egress-heavy workloads.[/]",
-            title="Cost Comparison",
-            border_style="yellow",
-        ))
+        console.print(
+            Panel(
+                f"[yellow]HF Buckets would cost {format_money(-savings)}/month more for this bucket.[/]\n"
+                "[dim]HF Buckets still include free egress, CDN, and deduplication — "
+                "savings grow with egress-heavy workloads.[/]",
+                title="Cost Comparison",
+                border_style="yellow",
+            )
+        )
 
     console.print()
 
     # Offer migration
     if not args.analyze_only and savings > 0:
-        if Confirm.ask("[bold]Would you like to migrate this data to HF Storage Buckets?[/]"):
+        if Confirm.ask(
+            "[bold]Would you like to migrate this data to HF Storage Buckets?[/]"
+        ):
             hf_bucket_id = args.hf_bucket or Prompt.ask(
                 "HF bucket ID (e.g. username/my-bucket)",
             )
 
             console.print()
-            console.print(f"[bold blue]Migrating to:[/] [cyan]hf://buckets/{hf_bucket_id}[/] (private={private})")
+            console.print(
+                f"[bold blue]Migrating to:[/] [cyan]hf://buckets/{hf_bucket_id}[/] (private={private})"
+            )
             console.print()
 
-            def on_progress(key, size, success, error=None):
-                if success:
-                    console.print(f"  [green]\u2713[/] {key} ({format_size(size)})")
-                else:
-                    console.print(f"  [red]\u2717[/] {key}: {error}")
+            total_bytes = info["total_bytes"]
 
-            with console.status("[bold green]Migrating..."):
+            with Progress(
+                TextColumn("[bold green]{task.description}"),
+                BarColumn(),
+                TaskProgressColumn(),
+                DownloadColumn(),
+                TransferSpeedColumn(),
+                TimeRemainingColumn(),
+                console=console,
+            ) as progress:
+                task = progress.add_task("Migrating...", total=total_bytes)
+
+                def on_progress(key, size, success, error=None):
+                    if success:
+                        progress.advance(task, size)
+                    else:
+                        progress.console.print(f"  [red]\u2717[/] {key}: {error}")
+
                 result = migrate_bucket(
                     s3_bucket=bucket,
                     hf_bucket_id=hf_bucket_id,
@@ -201,14 +241,16 @@ def run_analysis(args):
                 )
 
             console.print()
-            console.print(Panel(
-                f"[bold green]Migration complete![/]\n"
-                f"Files migrated: {result['migrated']}\n"
-                f"Files failed: {result['failed']}\n"
-                f"Data transferred: {format_size(result['total_bytes'])}",
-                title="Migration Summary",
-                border_style="green",
-            ))
+            console.print(
+                Panel(
+                    f"[bold green]Migration complete![/]\n"
+                    f"Files migrated: {result['migrated']}\n"
+                    f"Files failed: {result['failed']}\n"
+                    f"Data transferred: {format_size(result['total_bytes'])}",
+                    title="Migration Summary",
+                    border_style="green",
+                )
+            )
 
 
 def main():

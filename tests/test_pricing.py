@@ -8,9 +8,7 @@ from hf_save_on_storage.pricing import (
 
 def test_small_bucket():
     """1 TB bucket, 100 GB egress, 1M GETs."""
-    s3 = estimate_s3_monthly_cost(
-        size_gb=1024, egress_gb=100, get_requests=1_000_000
-    )
+    s3 = estimate_s3_monthly_cost(size_gb=1024, egress_gb=100, get_requests=1_000_000)
     hf = estimate_hf_monthly_cost(1024, private=True)
 
     assert s3["storage"] > 0

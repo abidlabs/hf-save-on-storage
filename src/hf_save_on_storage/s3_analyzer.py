@@ -15,7 +15,9 @@ def get_bucket_region(bucket: str) -> str:
     try:
         result = subprocess.run(
             ["curl", "-sI", f"https://{bucket}.s3.amazonaws.com"],
-            capture_output=True, text=True, timeout=10,
+            capture_output=True,
+            text=True,
+            timeout=10,
         )
         for line in result.stdout.splitlines():
             if line.lower().startswith("x-amz-bucket-region:"):
@@ -38,7 +40,9 @@ def get_bucket_region(bucket: str) -> str:
 def _make_s3_client(region: str, unsigned: bool = False):
     """Create an S3 client, optionally with unsigned (anonymous) config."""
     if unsigned:
-        return boto3.client("s3", region_name=region, config=Config(signature_version=UNSIGNED))
+        return boto3.client(
+            "s3", region_name=region, config=Config(signature_version=UNSIGNED)
+        )
     return boto3.client("s3", region_name=region)
 
 
@@ -81,8 +85,8 @@ def analyze_bucket(bucket: str, prefix: str = "") -> dict:
         "prefix": prefix,
         "region": region,
         "total_bytes": total_size,
-        "total_gb": total_size / (1024 ** 3),
-        "total_tb": total_size / (1024 ** 4),
+        "total_gb": total_size / (1024**3),
+        "total_tb": total_size / (1024**4),
         "object_count": object_count,
         "storage_classes": storage_classes,
     }
@@ -123,7 +127,7 @@ def get_cloudwatch_metrics(bucket: str, region: str, days: int = 30) -> dict:
             "get_requests": int(gets) if gets else None,
             "put_requests": int(puts) if puts else None,
             "bytes_downloaded": int(bytes_down) if bytes_down else None,
-            "egress_gb": bytes_down / (1024 ** 3) if bytes_down else None,
+            "egress_gb": bytes_down / (1024**3) if bytes_down else None,
             "days": days,
         }
     except Exception:

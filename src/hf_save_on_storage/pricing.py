@@ -3,36 +3,36 @@
 # AWS S3 Standard storage pricing (US East, per GB/month)
 # https://aws.amazon.com/s3/pricing/
 S3_STORAGE_TIERS = [
-    (50 * 1024, 0.023),      # First 50 TB: $0.023/GB
-    (450 * 1024, 0.022),     # Next 450 TB: $0.022/GB
-    (float("inf"), 0.021),   # Over 500 TB: $0.021/GB
+    (50 * 1024, 0.023),  # First 50 TB: $0.023/GB
+    (450 * 1024, 0.022),  # Next 450 TB: $0.022/GB
+    (float("inf"), 0.021),  # Over 500 TB: $0.021/GB
 ]
 
 # S3 egress pricing (per GB, US East)
 S3_EGRESS_TIERS = [
-    (10 * 1024, 0.09),       # First 10 TB: $0.09/GB
-    (40 * 1024, 0.085),      # Next 40 TB: $0.085/GB
-    (100 * 1024, 0.07),      # Next 100 TB: $0.07/GB
-    (float("inf"), 0.05),    # Over 150 TB: $0.05/GB
+    (10 * 1024, 0.09),  # First 10 TB: $0.09/GB
+    (40 * 1024, 0.085),  # Next 40 TB: $0.085/GB
+    (100 * 1024, 0.07),  # Next 100 TB: $0.07/GB
+    (float("inf"), 0.05),  # Over 150 TB: $0.05/GB
 ]
 
 # S3 request pricing
-S3_GET_REQUEST_PRICE = 0.0004 / 1000    # $0.0004 per 1,000 GET
-S3_PUT_REQUEST_PRICE = 0.005 / 1000     # $0.005 per 1,000 PUT
-S3_LIST_REQUEST_PRICE = 0.005 / 1000    # $0.005 per 1,000 LIST
+S3_GET_REQUEST_PRICE = 0.0004 / 1000  # $0.0004 per 1,000 GET
+S3_PUT_REQUEST_PRICE = 0.005 / 1000  # $0.005 per 1,000 PUT
+S3_LIST_REQUEST_PRICE = 0.005 / 1000  # $0.005 per 1,000 LIST
 
 # HF Storage Buckets pricing (per TB/month)
 HF_STORAGE_PUBLIC = [
-    (50, 12.0),       # Base: $12/TB
-    (200, 10.0),      # 50TB+: $10/TB (20% off)
-    (500, 9.0),       # 200TB+: $9/TB (25% off)
+    (50, 12.0),  # Base: $12/TB
+    (200, 10.0),  # 50TB+: $10/TB (20% off)
+    (500, 9.0),  # 200TB+: $9/TB (25% off)
     (float("inf"), 8.0),  # 500TB+: $8/TB (33% off)
 ]
 
 HF_STORAGE_PRIVATE = [
-    (50, 18.0),       # Base: $18/TB
-    (200, 16.0),      # 50TB+: $16/TB
-    (500, 14.0),      # 200TB+: $14/TB
+    (50, 18.0),  # Base: $18/TB
+    (200, 16.0),  # 50TB+: $16/TB
+    (500, 14.0),  # 200TB+: $14/TB
     (float("inf"), 12.0),  # 500TB+: $12/TB
 ]
 
@@ -63,9 +63,11 @@ def calc_s3_egress_cost(egress_gb: float) -> float:
 
 
 def calc_s3_request_cost(gets: int, puts: int, lists: int) -> float:
-    return (gets * S3_GET_REQUEST_PRICE +
-            puts * S3_PUT_REQUEST_PRICE +
-            lists * S3_LIST_REQUEST_PRICE)
+    return (
+        gets * S3_GET_REQUEST_PRICE
+        + puts * S3_PUT_REQUEST_PRICE
+        + lists * S3_LIST_REQUEST_PRICE
+    )
 
 
 def calc_hf_storage_cost(size_tb: float, private: bool = True) -> float:
@@ -107,7 +109,7 @@ def estimate_hf_monthly_cost(size_gb: float, private: bool = True) -> dict:
     storage = calc_hf_storage_cost(size_tb, private)
     return {
         "storage": storage,
-        "egress": 0.0,     # included
-        "requests": 0.0,   # included
+        "egress": 0.0,  # included
+        "requests": 0.0,  # included
         "total": storage,
     }
