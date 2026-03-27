@@ -5,8 +5,9 @@ from __future__ import annotations
 import tempfile
 from pathlib import Path
 
-import boto3
 from huggingface_hub import HfApi
+
+from .s3_analyzer import _make_s3_client, get_bucket_region
 
 
 def migrate_bucket(
@@ -24,7 +25,15 @@ def migrate_bucket(
     # Create the HF bucket if it doesn't exist
     api.create_bucket(hf_bucket_id, private=private, exist_ok=True)
 
-    s3 = boto3.client("s3", region_name=s3_region) if s3_region else boto3.client("s3")
+    region = s3_region or get_bucket_region(s3_bucket)
+
+    # Try unsigned (public) first, fall back to authenticated
+    s3 = _make_s3_client(region, unsigned=True)
+    try:
+        s3.head_bucket(Bucket=s3_bucket)
+    except Exception:
+        s3 = _make_s3_client(region, unsigned=False)
+
     paginator = s3.get_paginator("list_objects_v2")
 
     kwargs = {"Bucket": s3_bucket}

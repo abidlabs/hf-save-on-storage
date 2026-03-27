@@ -8,6 +8,7 @@ version = "0.1.0"
 description = "Analyze your S3 bucket costs and see how much you'd save by migrating to HF Storage Buckets"
 requires-python = ">=3.10"
 dependencies = [
+    "awscrt>=0.20.0",
     "boto3>=1.28.0",
     "huggingface_hub>=1.5.0",
     "rich>=13.0.0",
