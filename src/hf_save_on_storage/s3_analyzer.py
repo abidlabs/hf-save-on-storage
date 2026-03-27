@@ -10,17 +10,8 @@ from datetime import datetime, timedelta, timezone
 
 
 def get_bucket_region(bucket: str) -> str:
-    """Get the region of an S3 bucket via HEAD request (works for public buckets too)."""
-    try:
-        # Try the authenticated API first
-        s3 = boto3.client("s3")
-        resp = s3.get_bucket_location(Bucket=bucket)
-        loc = resp.get("LocationConstraint")
-        return loc or "us-east-1"
-    except Exception:
-        pass
-
-    # Fallback: use curl to get region from response headers (avoids Python SSL issues)
+    """Get the region of an S3 bucket. Uses curl first (no credentials needed)."""
+    # Try curl HEAD first — works for any bucket, no credentials or awscrt needed
     try:
         result = subprocess.run(
             ["curl", "-sI", f"https://{bucket}.s3.amazonaws.com"],
@@ -32,12 +23,21 @@ def get_bucket_region(bucket: str) -> str:
     except Exception:
         pass
 
+    # Fallback: authenticated API (needs valid AWS credentials + awscrt)
+    try:
+        s3 = boto3.client("s3")
+        resp = s3.get_bucket_location(Bucket=bucket)
+        loc = resp.get("LocationConstraint")
+        return loc or "us-east-1"
+    except Exception:
+        pass
+
     return "us-east-1"
 
 
-def _make_s3_client(region: str, try_unsigned: bool = False):
+def _make_s3_client(region: str, unsigned: bool = False):
     """Create an S3 client, optionally with unsigned (anonymous) config."""
-    if try_unsigned:
+    if unsigned:
         return boto3.client("s3", region_name=region, config=Config(signature_version=UNSIGNED))
     return boto3.client("s3", region_name=region)
 
@@ -46,12 +46,18 @@ def analyze_bucket(bucket: str, prefix: str = "") -> dict:
     """Walk an S3 bucket and return size/object stats."""
     region = get_bucket_region(bucket)
 
-    # Try authenticated first, fall back to unsigned for public buckets
-    s3 = _make_s3_client(region)
+    # Try unsigned (public) first — no credentials needed
+    s3 = _make_s3_client(region, unsigned=True)
     try:
         s3.head_bucket(Bucket=bucket)
     except Exception:
-        s3 = _make_s3_client(region, try_unsigned=True)
+        # Not publicly accessible, try authenticated
+        try:
+            s3 = _make_s3_client(region, unsigned=False)
+            s3.head_bucket(Bucket=bucket)
+        except Exception:
+            # Fall back to unsigned and hope listing works
+            s3 = _make_s3_client(region, unsigned=True)
 
     total_size = 0
     object_count = 0
