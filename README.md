@@ -1,10 +1,10 @@
 # hf-save-on-storage
 
-A [Hugging Face CLI extension](https://huggingface.co/docs/huggingface_hub/en/guides/cli-extensions) that analyzes your AWS S3 bucket and shows how much you'd save by migrating to [HF Storage Buckets](https://huggingface.co/storage). If you like what you see, it migrates the data for you.
+A [Hugging Face CLI extension](https://huggingface.co/docs/huggingface_hub/en/guides/cli-extensions) that analyzes your AWS S3 bucket and shows how much you'd save by migrating to [HF Storage Buckets](https://huggingface.co/storage). If you like what you see, it migrates the data for you :)
 
 ## Quickstart
 
-Try it right now against a public S3 bucket — no AWS credentials needed:
+Try it right now against a public S3 bucket by running the following commands in your terminal (no login needed):
 
 ```bash
 pip install huggingface_hub
@@ -17,7 +17,7 @@ This scans the public `gradio-pypi-previews` bucket (~547 GB, 9k+ objects) and s
 ## Usage
 
 ```bash
-# Analyze your own S3 bucket (requires AWS credentials configured)
+# Analyze your own S3 bucket (requires you to be logged in via aws cli if it's a private bucket)
 hf save-on-storage my-s3-bucket --analyze-only
 
 # Include egress estimate (100 GB/month) for a fuller comparison
@@ -87,14 +87,5 @@ hf save-on-storage my-s3-bucket --hf-repo myuser/my-dataset
 ## Requirements
 
 - Python >= 3.10
-- AWS credentials configured (`aws configure` or env vars)
-- `hf` CLI logged in (`huggingface-cli login`) for migration
-
-## Dev install
-
-```bash
-git clone https://github.com/abidlabs/hf-save-on-storage
-cd hf-save-on-storage
-pip install -e .
-pytest tests/ -v
-```
+- AWS credentials configured (`aws configure` or env vars), only needed for private S3 buckets
+- `hf` CLI logged in (`huggingface-cli login`), only needed if you'd like to migrate your data
