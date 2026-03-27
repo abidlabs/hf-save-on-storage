@@ -56,6 +56,8 @@ hf save-on-storage my-s3-bucket --hf-repo myuser/my-dataset
 | CDN | Extra cost | **Free** (included) |
 | Deduplication | N/A | Built-in (up to 4x savings) |
 
+Read more in our launch blog post: https://huggingface.co/blog/storage-buckets
+
 ## Options
 
 | Flag | Description |
